@@ -4,6 +4,7 @@
 
 const SHA256 = require('crypto-js/sha256');
 
+const levelSandbox = require('./levelSandbox.js');
 
 /* ===== Block Class ==============================
 |  Class with a constructor for block 			   |
@@ -22,50 +23,69 @@ class Block{
 /* ===== Blockchain Class ==========================
 |  Class with a constructor for new blockchain 		|
 |  ================================================*/
-
 class Blockchain{
   constructor(){
-    this.chain = [];
-    this.addBlock(new Block("First block in the chain - Genesis block"));
+    this.levelSandbox = new levelSandbox.LevelSandbox();
+    this.getBlockHeight()
+        .then(height => {
+          if (height === 0) {
+              this.addBlock(new Block("First block in the chain - Genesis block"));
+          }
+        });
   }
 
   // Add new block
   addBlock(newBlock){
-    // Block height
-    newBlock.height = this.chain.length;
-    // UTC timestamp
-    newBlock.time = new Date().getTime().toString().slice(0,-3);
-    // previous block hash
-    if(this.chain.length>0){
-      newBlock.previousBlockHash = this.chain[this.chain.length-1].hash;
-    }
-    // Block hash with SHA256 using newBlock and converting to a string
-    newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-    // Adding block object to chain
-  	this.chain.push(newBlock);
+    let self = this;
+    return self.getBlockHeight()
+        .then(
+            function (height) {
+                // Block height
+                newBlock.height = height;
+                // UTC timestamp
+                newBlock.time = new Date().getTime().toString().slice(0, -3);
+                // previous block hash
+                if (newBlock.height > 0) {
+                     return self.getBlock(newBlock.height-1);
+                }
+                else {
+                  return null;
+                }
+
+            }
+        )
+        .then(
+            function(result) {
+              if (result != null) {
+                  newBlock.previousBlockHash = result.hash;
+              }
+                // Block hash with SHA256 using newBlock and converting to a string
+                newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+                // Adding block object to chain
+                return self.levelSandbox.addDataToLevelDB(JSON.stringify(newBlock).toString())
+            }
+        );
   }
 
   // Get block height
     getBlockHeight(){
-      return this.chain.length-1;
-    }
+      return  this.levelSandbox.getLevelDBCount();
+  }
 
     // get block
-    getBlock(blockHeight){
-      // return object as a single string
-      return JSON.parse(JSON.stringify(this.chain[blockHeight]));
+     getBlock(blockHeight){
+      return this.levelSandbox.getLevelDBData(blockHeight)
+          .then(result => JSON.parse(result));
     }
-
     // validate block
-    validateBlock(blockHeight){
-      // get block object
-      let block = this.getBlock(blockHeight);
+    validateBlock(block){
       // get block hash
       let blockHash = block.hash;
       // remove block hash to test block integrity
-      block.hash = '';
+      let clone = JSON.parse(JSON.stringify(block));
+      clone.hash = '';
       // generate block hash
-      let validBlockHash = SHA256(JSON.stringify(block)).toString();
+      let validBlockHash = SHA256(JSON.stringify(clone)).toString();
       // Compare
       if (blockHash===validBlockHash) {
           return true;
@@ -76,23 +96,40 @@ class Blockchain{
     }
 
    // Validate blockchain
-    validateChain(){
-      let errorLog = [];
-      for (var i = 0; i < this.chain.length-1; i++) {
-        // validate block
-        if (!this.validateBlock(i))errorLog.push(i);
-        // compare blocks hash link
-        let blockHash = this.chain[i].hash;
-        let previousHash = this.chain[i+1].previousBlockHash;
-        if (blockHash!==previousHash) {
-          errorLog.push(i);
-        }
-      }
-      if (errorLog.length>0) {
-        console.log('Block errors = ' + errorLog.length);
-        console.log('Blocks: '+errorLog);
-      } else {
-        console.log('No errors detected');
-      }
+    validateChain() {
+        return this.getBlockHeight()
+            .then(height => {
+                let errorLog = [];
+                let promises = [];
+                for (let i = 0; i < height - 1; i++) {
+                    promises.push(this.getBlock(i)
+                        .then(block => {
+                            if (!this.validateBlock(block)) {
+                                errorLog.push(i)
+                            }
+                            let previous = block.hash;
+                            return this.getBlock(i+1)
+                                .then (block => {
+                                    if (typeof block !== "undefined" && block.previousBlockHash !== previous) {
+                                        errorLog.push(i)
+                                    }
+                                });
+                        })
+                    );
+                }
+                return Promise.all(promises)
+                    .then(results => {
+                        if (errorLog.length > 0) {
+                            console.log('Block errors = ' + errorLog.length);
+                            console.log('Blocks: ' + errorLog);
+                        } else {
+                            console.log('No errors detected');
+                        }
+                    });
+            });
     }
 }
+
+// Exporting the class Block to be reuse in other files
+module.exports.Blockchain = Blockchain;
+module.exports.Block = Block;
