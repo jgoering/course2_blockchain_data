@@ -18,6 +18,7 @@
   "homepage": "https://github.com/jgoering/course2_blockchain_data#readme",
   "dependencies": {
     "crypto-js": "^3.1.9-1",
+    "express": "^4.16.4",
     "level": "^4.0.0"
   }
 }
