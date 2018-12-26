@@ -5,20 +5,8 @@
 const SHA256 = require('crypto-js/sha256');
 
 const levelSandbox = require('./levelSandbox.js');
+const block = require('./block.js');
 
-/* ===== Block Class ==============================
-|  Class with a constructor for block 			   |
-|  ===============================================*/
-
-class Block{
-	constructor(data){
-     this.hash = "",
-     this.height = 0,
-     this.body = data,
-     this.time = 0,
-     this.previousBlockHash = ""
-    }
-}
 
 /* ===== Blockchain Class ==========================
 |  Class with a constructor for new blockchain 		|
@@ -29,7 +17,7 @@ class Blockchain{
     this.getBlockHeight()
         .then(height => {
           if (height === 0) {
-              this.addBlock(new Block("First block in the chain - Genesis block"));
+              this.addBlock(new block.Block("First block in the chain - Genesis block"));
           }
         });
   }
@@ -132,4 +120,3 @@ class Blockchain{
 
 // Exporting the class Block to be reuse in other files
 module.exports.Blockchain = Blockchain;
-module.exports.Block = Block;
