@@ -51,6 +51,7 @@ class Blockchain{
                 newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
                 // Adding block object to chain
                 return self.levelSandbox.addDataToLevelDB(JSON.stringify(newBlock).toString())
+                    .then(result => JSON.parse(result));
             }
         );
   }

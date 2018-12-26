@@ -1,10 +1,4 @@
-const simpleChain = require('./simpleChain.js');
-const blockchain = new simpleChain.Blockchain();
-const block = require('./block.js');
-
-//Importing Express.js module
 const express = require("express");
-//Importing BodyParser.js module
 const bodyParser = require("body-parser");
 
 /**
