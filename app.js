@@ -6,7 +6,7 @@ const block = require('./block.js');
     setTimeout(function () {
         let blockTest = new block.Block("Test Block - " + (i + 1));
         blockchain.addBlock(blockTest).then(blockchain.validateChain()).then((result) => {
-            console.log(result);
+            console.log("added " + result);
             i++;
             if (i < 10) theLoop(i);
         });

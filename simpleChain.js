@@ -66,7 +66,7 @@ class Blockchain{
           .then(result => JSON.parse(result));
     }
     // validate block
-    validateBlock(block){
+    static validateBlock(block){
       // get block hash
       let blockHash = block.hash;
       // remove block hash to test block integrity
@@ -75,31 +75,25 @@ class Blockchain{
       // generate block hash
       let validBlockHash = SHA256(JSON.stringify(clone)).toString();
       // Compare
-      if (blockHash===validBlockHash) {
-          return true;
-        } else {
-          console.log('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash);
-          return false;
-        }
+      return blockHash === validBlockHash;
     }
 
    // Validate blockchain
-    validateChain() {
+    async validateChain() {
         return this.getBlockHeight()
             .then(height => {
-                let errorLog = [];
                 let promises = [];
                 for (let i = 0; i < height - 1; i++) {
                     promises.push(this.getBlock(i)
                         .then(block => {
-                            if (!this.validateBlock(block)) {
-                                errorLog.push(i)
+                            if (!Blockchain.validateBlock(block)) {
+                                return "invalid hash in block " + i;
                             }
                             let previous = block.hash;
                             return this.getBlock(i+1)
                                 .then (block => {
                                     if (typeof block !== "undefined" && block.previousBlockHash !== previous) {
-                                        errorLog.push(i)
+                                        return "invalid previous hash in block " + i;
                                     }
                                 });
                         })
@@ -107,9 +101,10 @@ class Blockchain{
                 }
                 return Promise.all(promises)
                     .then(results => {
-                        if (errorLog.length > 0) {
-                            console.log('Block errors = ' + errorLog.length);
-                            console.log('Blocks: ' + errorLog);
+                        results = results.filter(el => el != null);
+                        if (results.length > 0) {
+                            console.log('Block errors = ' + results.length);
+                            console.log(results);
                         } else {
                             console.log('No errors detected');
                         }
