@@ -10,6 +10,7 @@ console.log(bitcoinMessage.verify(message, address, signature))
 
  */
 
+const validationRequestClass = require('./validationRequest');
 const SHA256 = require('crypto-js/sha256');
 const BlockClass = require('./block.js');
 const simpleChain = require('./simpleChain.js');
@@ -30,16 +31,20 @@ class ValidationController {
     }
 
     requestValidation() {
-        let self = this;
         this.app.post("/requestValidation", (req, res) => {
             let body = req.body;
             if (body && body !== "") {
-                if (this.mempool.indexOf(body.address) === -1) {
-                    this.mempool.push(body.address);
-                    self.timeoutRequests[body.address]=setTimeout(function(){ self.removeValidationRequest(body.address) }, TimeoutRequestsWindowTime );
+                let validationRequest;
+                if (this.mempool[body.address]) {
+                    validationRequest = this.mempool[body.address];
+                } else {
+                    validationRequest = new validationRequestClass.ValidationRequest(body.address);
+                    this.mempool[body.address] = validationRequest;
+                    this.timeoutRequests[body.address]=setTimeout(function(){ self.removeValidationRequest(body.address) }, TimeoutRequestsWindowTime );
                 }
+                validationRequest.updateValidationWindow(TimeoutRequestsWindowTime);
                 res.setHeader('Content-Type', 'text/plain');
-                res.end(JSON.stringify(body).toString());
+                res.end(JSON.stringify(validationRequest).toString());
             } else {
                 res.sendStatus(422);
             }
@@ -47,7 +52,7 @@ class ValidationController {
     }
 
     removeValidationRequest(address) {
-        this.mempool = this.mempool.filter(value => {return value !== address});
+        delete this.mempool[address];
         delete this.timeoutRequests[address];
     }
 }
