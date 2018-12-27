@@ -23,6 +23,7 @@ class ValidationController {
     constructor(app) {
         this.app = app;
         this.requestValidation();
+        this.validate();
         this.mempool = new mempoolclass.MemPool();
         this.blockchain = new simpleChain.Blockchain();
     }
@@ -40,9 +41,21 @@ class ValidationController {
         });
     }
 
-    removeValidationRequest(address) {
-        delete this.mempool[address];
-        delete this.timeoutRequests[address];
+    validate() {
+        this.app.post("/validate", (req, res) => {
+            let body = req.body;
+            if (body && body !== "") {
+                let validRequest = this.mempool.validateRequestByWallet(body.address, body.signature);
+                if (validRequest) {
+                    res.setHeader('Content-Type', 'text/plain');
+                    res.end(JSON.stringify(validRequest).toString());
+                } else {
+                    res.sendStatus(401);
+                }
+            } else {
+                res.sendStatus(422);
+            }
+        })
     }
 }
 
