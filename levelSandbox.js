@@ -4,16 +4,12 @@
 
 const level = require('level');
 const chainDB = './chaindata';
-
+const db = level(chainDB);
 class LevelSandbox {
-    constructor(){
-        this.db = level(chainDB);
-    }
     // Add data to levelDB with key/value pair
     addLevelDBData(key, value) {
-        let self = this;
         return new Promise(function (resolve, reject) {
-            self.db.put(key, value, err => {
+            db.put(key, value, err => {
                 if (err) {
                     console.log('Block' + key + ' submission failed', err);
                     reject(err);
@@ -26,9 +22,8 @@ class LevelSandbox {
 
     // Get data from levelDB with key
     getLevelDBData(key) {
-        let self = this;
         return new Promise(function (resolve, reject) {
-            self.db.get(key, (err, value) => {
+            db.get(key, (err, value) => {
                 if (err) {
                     if (err.type === 'NotFoundError') {
                         resolve('undefined');
@@ -44,10 +39,9 @@ class LevelSandbox {
     }
 
     getLevelDBCount() {
-        let self = this;
         return new Promise(function (resolve, reject) {
             let i = 0;
-            self.db.createReadStream()
+            db.createReadStream()
                 .on('data', function (data) {
                     i++;
                 })
