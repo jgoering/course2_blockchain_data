@@ -15,6 +15,7 @@ const BlockClass = require('./block.js');
 const simpleChain = require('./simpleChain.js');
 
 const blockchain = new simpleChain.Blockchain();
+const TimeoutRequestsWindowTime = 5*60*1000;
 
 class ValidationController {
     /**
@@ -29,11 +30,13 @@ class ValidationController {
     }
 
     requestValidation() {
+        let self = this;
         this.app.post("/requestValidation", (req, res) => {
             let body = req.body;
             if (body && body !== "") {
                 if (this.mempool.indexOf(body.address) === -1) {
                     this.mempool.push(body.address);
+                    self.timeoutRequests[body.address]=setTimeout(function(){ self.removeValidationRequest(body.address) }, TimeoutRequestsWindowTime );
                 }
                 res.setHeader('Content-Type', 'text/plain');
                 res.end(JSON.stringify(body).toString());
@@ -41,6 +44,11 @@ class ValidationController {
                 res.sendStatus(422);
             }
         });
+    }
+
+    removeValidationRequest(address) {
+        this.mempool = this.mempool.filter(value => {return value !== address});
+        delete this.timeoutRequests[address];
     }
 }
 
