@@ -3,6 +3,7 @@ class ValidationRequest{
     constructor(address){
         this.walletAddress = address;
         this.requestTimeStamp = Date.now();
+        this.message = this.walletAddress + ":" + this.requestTimeStamp + ":starRegistry";
     }
 
     updateValidationWindow(timeout){
