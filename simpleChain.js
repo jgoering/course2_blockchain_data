@@ -114,6 +114,9 @@ class Blockchain{
     async getBlockByHash(hash) {
       return this.levelSandbox.getBlockByHash(hash);
     }
+    async getBlocksByWalletAddress(address) {
+      return this.levelSandbox.getBlocksByWalletAddress(address);
+    }
 }
 
 // Exporting the class Block to be reuse in other files
