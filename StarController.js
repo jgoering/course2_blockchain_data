@@ -45,7 +45,7 @@ class StarController {
     }
 
     validate() {
-        this.app.post("/validate", (req, res) => {
+        this.app.post("/message-signature/validate", (req, res) => {
             let body = req.body;
             if (body && body !== "") {
                 let validRequest = this.mempool.validateRequestByWallet(body.address, body.signature);

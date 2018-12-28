@@ -39,7 +39,7 @@ curl -X POST \
 to validate:
 
 curl -X POST \
-  http://localhost:8000/validate \
+  http://localhost:8000/message-signature/validate \
   -H 'Content-Type: application/json' \
   -H 'Postman-Token: 45d7e221-757b-42e2-9a02-ecea7c37b39c' \
   -H 'cache-control: no-cache' \
