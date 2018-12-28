@@ -38,6 +38,9 @@ class MemPool {
             }
         }
     }
+    verifyAddressRequest(address) {
+        return this.mempoolValid[address] && this.mempoolValid[address].status.messageSignature === 'valid';
+    }
 }
 
 module.exports.MemPool = MemPool;
