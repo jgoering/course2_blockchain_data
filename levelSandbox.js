@@ -32,7 +32,7 @@ class LevelSandbox {
                         reject(err);
                     }
                 } else {
-                    resolve(value);
+                    resolve(JSON.parse(value));
                 }
             });
         });
@@ -60,7 +60,8 @@ class LevelSandbox {
     addDataToLevelDB(value) {
         let self = this;
         return this.getLevelDBCount()
-            .then(count => self.addLevelDBData(count, value));
+            .then(count => self.addLevelDBData(count, JSON.stringify(value).toString()))
+            .then(result => JSON.parse(result));
     }
 
     getBlockByHash(hash) {
@@ -69,7 +70,7 @@ class LevelSandbox {
             db.createReadStream()
                 .on('data', function (data) {
                     if(JSON.parse(data.value).hash === hash){
-                        block = data.value;
+                        block = JSON.parse(data.value);
                     }
                 })
                 .on('error', function (err) {

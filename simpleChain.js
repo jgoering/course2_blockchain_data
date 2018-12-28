@@ -50,8 +50,7 @@ class Blockchain{
                 // Block hash with SHA256 using newBlock and converting to a string
                 newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
                 // Adding block object to chain
-                return self.levelSandbox.addDataToLevelDB(JSON.stringify(newBlock).toString())
-                    .then(result => JSON.parse(result));
+                return self.levelSandbox.addDataToLevelDB(newBlock);
             }
         );
   }
@@ -63,8 +62,7 @@ class Blockchain{
 
     // get block
      getBlock(blockHeight){
-      return this.levelSandbox.getLevelDBData(blockHeight)
-          .then(result => JSON.parse(result));
+      return this.levelSandbox.getLevelDBData(blockHeight);
     }
     // validate block
     static validateBlock(block){
@@ -114,8 +112,7 @@ class Blockchain{
     }
 
     async getBlockByHash(hash) {
-      return this.levelSandbox.getBlockByHash(hash)
-          .then(result => JSON.parse(result));
+      return this.levelSandbox.getBlockByHash(hash);
     }
 }
 
