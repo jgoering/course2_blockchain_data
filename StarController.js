@@ -25,6 +25,7 @@ class StarController {
         this.requestValidation();
         this.validate();
         this.addStar();
+        this.getStarByHash();
         this.mempool = new mempoolclass.MemPool();
         this.blockchain = new simpleChain.Blockchain();
     }
@@ -87,6 +88,21 @@ class StarController {
             } else {
                 res.sendStatus(422);
             }
+        });
+    }
+
+    getStarByHash() {
+        this.app.get("/stars/hash::hash", (req, res) => {
+            this.blockchain.getBlockByHash(req.params.hash)
+                .then(block => {
+                    if (block) {
+                        block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+                        res.setHeader('Content-Type', 'text/plain');
+                        res.end(JSON.stringify(block).toString());
+                    } else {
+                        res.sendStatus(404);
+                    }
+                })
         });
     }
 }

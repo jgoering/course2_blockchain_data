@@ -112,6 +112,11 @@ class Blockchain{
                     });
             });
     }
+
+    async getBlockByHash(hash) {
+      return this.levelSandbox.getBlockByHash(hash)
+          .then(result => JSON.parse(result));
+    }
 }
 
 // Exporting the class Block to be reuse in other files
