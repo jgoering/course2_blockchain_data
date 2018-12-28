@@ -14,6 +14,7 @@ const mempoolclass = require('./mempool.js');
 const BlockClass = require('./block.js');
 const simpleChain = require('./simpleChain.js');
 const hex2ascii = require('hex2ascii');
+const { check, validationResult } = require('express-validator/check');
 
 class StarController {
     /**
@@ -25,6 +26,7 @@ class StarController {
         this.requestValidation();
         this.validate();
         this.addStar();
+        this.getStarByIndex();
         this.getStarByHash();
         this.getStarsByWalletAddress();
         this.mempool = new mempoolclass.MemPool();
@@ -32,63 +34,84 @@ class StarController {
     }
 
     requestValidation() {
-        this.app.post("/requestValidation", (req, res) => {
-            let body = req.body;
-            if (body && body !== "") {
-                let validationRequest = this.mempool.getOrAdd(body.address);
-                res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify(validationRequest).toString());
-            } else {
-                res.sendStatus(422);
+        this.app.post("/requestValidation", [check('address').isAlphanumeric()], (req, res) => {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(422).json({ errors: errors.array() });
             }
+            let validationRequest = this.mempool.getOrAdd(req.body.address);
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(validationRequest).toString());
         });
     }
 
     validate() {
-        this.app.post("/message-signature/validate", (req, res) => {
-            let body = req.body;
-            if (body && body !== "") {
-                let validRequest = this.mempool.validateRequestByWallet(body.address, body.signature);
-                if (validRequest) {
-                    res.setHeader('Content-Type', 'text/plain');
-                    res.end(JSON.stringify(validRequest).toString());
-                } else {
-                    res.sendStatus(401);
-                }
+        this.app.post("/message-signature/validate", [
+            check('address').isAlphanumeric(),
+            check('signature').not().isEmpty()
+        ], (req, res) => {
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(422).json({ errors: errors.array() });
+            }
+            let validRequest = this.mempool.validateRequestByWallet(req.body.address, req.body.signature);
+            if (validRequest) {
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify(validRequest).toString());
             } else {
-                res.sendStatus(422);
+                res.sendStatus(401);
             }
         })
     }
 
     addStar() {
-        this.app.post("/stars", (req, res) => {
+        this.app.post("/block", [
+            check('address').isAlphanumeric(),
+            check('star').not().isEmpty(),
+            check('star.ra').not().isEmpty(),
+            check('star.dec').not().isEmpty(),
+            check('star.story').not().isEmpty()
+        ], (req, res) => {
             let body = req.body;
-            if (body && body !== "") {
-                if (this.mempool.verifyAddressRequest(body.address)) {
-                    let blockBody = {
-                        address: body.address,
-                        star: {
-                            ra: body.star.ra,
-                            dec: body.star.dec,
-                            mag: body.star.mag,
-                            cen: body.star.cen,
-                            story: Buffer.from(body.star.story).toString('hex')
-                        }
-                    };
-                    let block = new BlockClass.Block(blockBody);
-                    this.blockchain.addBlock(block)
-                        .then(block => {
-                            block.body.star.storyDecoded = hex2ascii(block.body.star.story);
-                            res.setHeader('Content-Type', 'text/plain');
-                            res.end(JSON.stringify(block).toString());
-                        });
-                } else {
-                    res.sendStatus(401);
-                }
-            } else {
-                res.sendStatus(422);
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                return res.status(422).json({ errors: errors.array() });
             }
+            if (this.mempool.verifyAddressRequest(body.address)) {
+                    let blockBody = {
+                    address: body.address,
+                    star: {
+                        ra: body.star.ra,
+                        dec: body.star.dec,
+                        mag: body.star.mag,
+                        cen: body.star.cen,
+                        story: Buffer.from(body.star.story).toString('hex')
+                    }
+                };
+                let block = new BlockClass.Block(blockBody);
+                this.blockchain.addBlock(block)
+                    .then(block => {
+                        block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+                        res.setHeader('Content-Type', 'application/json');
+                        res.end(JSON.stringify(block).toString());
+                    });
+            } else {
+                res.sendStatus(401);
+            }
+        });
+    }
+
+    /**
+     * Implement a GET Endpoint to retrieve a block by index, url: "/api/block/:index"
+     */
+    getStarByIndex() {
+        this.app.get("/block/:index", (req, res) => {
+            this.blockchain.getBlock(req.params.index)
+                .then(block => {
+                    block.body.star.storyDecoded = hex2ascii(block.body.star.story);
+                    res.setHeader('Content-Type', 'application/json');
+                    res.end(JSON.stringify(block).toString())
+                });
         });
     }
 
@@ -98,7 +121,7 @@ class StarController {
                 .then(block => {
                     if (block) {
                         block.body.star.storyDecoded = hex2ascii(block.body.star.story);
-                        res.setHeader('Content-Type', 'text/plain');
+                        res.setHeader('Content-Type', 'application/json');
                         res.end(JSON.stringify(block).toString());
                     } else {
                         res.sendStatus(404);
@@ -114,7 +137,7 @@ class StarController {
                         block.body.star.storyDecoded = hex2ascii(block.body.star.story);
                         return block;
                     });
-                    res.setHeader('Content-Type', 'text/plain');
+                    res.setHeader('Content-Type', 'application/json');
                     res.end(JSON.stringify(result).toString());
                 })
         });

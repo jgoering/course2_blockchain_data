@@ -51,7 +51,7 @@ curl -X POST \
 to post star data:
 
 curl -X POST \
-  http://localhost:8000/stars \
+  http://localhost:8000/block \
   -H 'Content-Type: application/json' \
   -H 'Postman-Token: 08226993-c857-4a4c-b3d7-b24046037fa2' \
   -H 'cache-control: no-cache' \

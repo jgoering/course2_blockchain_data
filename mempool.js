@@ -17,6 +17,7 @@ class MemPool {
         } else {
             validationRequest = new validationRequestClass.ValidationRequest(address);
             this.mempool[address] = validationRequest;
+            let self = this;
             this.timeoutRequests[address]=setTimeout(function(){ self.removeValidationRequest(address) }, TimeoutRequestsWindowTime );
         }
         validationRequest.updateValidationWindow(TimeoutRequestsWindowTime);
@@ -39,7 +40,12 @@ class MemPool {
         }
     }
     verifyAddressRequest(address) {
-        return this.mempoolValid[address] && this.mempoolValid[address].status.messageSignature === 'valid';
+        let validRequest = this.mempoolValid[address];
+        if (validRequest) {
+            delete this.mempoolValid[address];
+            return validRequest.status.messageSignature === 'valid';
+        }
+        return false;
     }
 }
 
